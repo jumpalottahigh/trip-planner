@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { PlannerEvent, Trip } from '../types'
-import { decodeTrip, encodeTrip, hasShareParam, tripSignature } from './share'
+import {
+  decodeTrip,
+  encodeTrip,
+  extractShareHash,
+  hasShareParam,
+  tripSignature
+} from './share'
 
 const trip: Trip = {
   id: 'trip-1',
@@ -61,6 +67,14 @@ async function deflate(bytes: Uint8Array): Promise<Uint8Array> {
 }
 
 describe('share links', () => {
+  it('extracts the share fragment from pasted text', () => {
+    expect(extractShareHash('https://example.com/app/#t=1.abc')).toBe('#t=1.abc')
+    expect(extractShareHash('  #t=1.abc\n')).toBe('#t=1.abc')
+    expect(extractShareHash('t=1.abc')).toBe('#t=1.abc')
+    expect(extractShareHash('https://example.com/')).toBeNull()
+    expect(extractShareHash('')).toBeNull()
+  })
+
   it('covers every trip and event field', () => {
     expect(Object.keys(tripFields).sort()).toEqual(Object.keys(trip).sort())
     expect(Object.keys(eventFields).sort()).toEqual(

@@ -168,6 +168,7 @@ export function usePlanner() {
   return {
     state,
     trip,
+    pristine,
     error,
     saveEvent,
     deleteEvent,

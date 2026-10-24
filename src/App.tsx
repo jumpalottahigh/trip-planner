@@ -16,6 +16,7 @@ export function App() {
   const share = useShareLink({
     state,
     trip,
+    pristine: planner.pristine,
     selectTrip: planner.selectTrip,
     importTrip: planner.importTrip,
     replaceTrip: planner.replaceTrip,
@@ -123,6 +124,9 @@ export function App() {
             onRename={planner.renameTrip}
             onDelete={planner.deleteTrip}
             onCopyLink={share.copyLink}
+            canShare={share.canShare}
+            onShare={share.shareLink}
+            onOpenLink={share.openLink}
           />
           {share.linkTooLong && (
             <p className='notice' role='status'>

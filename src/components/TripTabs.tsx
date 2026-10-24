@@ -10,9 +10,12 @@ type Props = {
   onRename: (id: string, name: string) => boolean
   onDelete: (id: string) => void
   onCopyLink: () => Promise<boolean>
+  canShare: boolean
+  onShare: () => Promise<void>
+  onOpenLink: (text: string) => Promise<string | null>
 }
 
-type Mode = 'idle' | 'rename' | 'delete'
+type Mode = 'idle' | 'rename' | 'delete' | 'open'
 type CopyStatus = 'idle' | 'copied' | 'failed'
 
 export function TripTabs({
@@ -22,11 +25,15 @@ export function TripTabs({
   onCreate,
   onRename,
   onDelete,
-  onCopyLink
+  onCopyLink,
+  canShare,
+  onShare,
+  onOpenLink
 }: Props) {
   const active = trips.find((trip) => trip.id === activeId)
   const [mode, setMode] = useState<Mode>('idle')
   const [name, setName] = useState('')
+  const [link, setLink] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
   const [copy, setCopy] = useState<CopyStatus>('idle')
 
@@ -64,7 +71,55 @@ export function TripTabs({
           </button>
         </li>
       </ul>
-      {mode === 'rename' ? (
+      {mode === 'open' ? (
+        <form
+          className='trip-actions'
+          noValidate
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const failure = await onOpenLink(link)
+            if (failure) setNameError(failure)
+            else {
+              setLink('')
+              setNameError(null)
+              setMode('idle')
+            }
+          }}
+        >
+          <label className='visually-hidden' htmlFor='trip-link'>
+            Trip link
+          </label>
+          <input
+            id='trip-link'
+            autoFocus
+            value={link}
+            inputMode='url'
+            autoCapitalize='off'
+            autoCorrect='off'
+            spellCheck={false}
+            placeholder='Paste a trip link'
+            onChange={(event) => setLink(event.target.value)}
+          />
+          <button type='submit' className='btn'>
+            Open
+          </button>
+          <button
+            type='button'
+            className='btn secondary'
+            onClick={() => {
+              setMode('idle')
+              setNameError(null)
+            }}
+          >
+            Cancel
+          </button>
+          {nameError && (
+            <p className='field-error' role='alert'>
+              {nameError}
+            </p>
+          )}
+        </form>
+      ) : mode === 'rename' ? (
         <form
           className='trip-actions'
           noValidate
@@ -117,6 +172,22 @@ export function TripTabs({
           >
             Copy link
           </button>
+          {canShare && (
+            <button type='button' className='btn secondary' onClick={onShare}>
+              Share
+            </button>
+          )}
+          <button
+            type='button'
+            className='btn secondary'
+            onClick={() => {
+              setLink('')
+              setNameError(null)
+              setMode('open')
+            }}
+          >
+            Open link
+          </button>
           <button
             type='button'
             className='btn secondary'
@@ -156,8 +227,7 @@ export function TripTabs({
           )}
           <span className='copy-status' role='status'>
             {copy === 'copied' && 'Link copied'}
-            {copy === 'failed' &&
-              'Could not copy. Copy the link from the address bar.'}
+            {copy === 'failed' && 'Could not copy the link.'}
           </span>
         </div>
       )}

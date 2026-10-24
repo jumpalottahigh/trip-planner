@@ -29,10 +29,20 @@
 * {
   box-sizing: border-box;
 }
+html {
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
   background:
     radial-gradient(1200px 600px at -10% -20%, #43b5d419, transparent 60%),
     radial-gradient(900px 500px at 110% 0%, #ed8a5c19, transparent 55%),
@@ -53,9 +63,15 @@ button:focus-visible,
   outline-offset: -3px;
 }
 .app {
+  --pad-y: 32px;
+  --pad-x: 28px;
   max-width: 1600px;
   margin: auto;
-  padding: 32px 28px;
+  /* Keeps content clear of the notch, status bar and home indicator in full-screen mode. */
+  padding: calc(var(--pad-y) + env(safe-area-inset-top, 0px))
+    calc(var(--pad-x) + env(safe-area-inset-right, 0px))
+    calc(var(--pad-y) + env(safe-area-inset-bottom, 0px))
+    calc(var(--pad-x) + env(safe-area-inset-left, 0px));
 }
 .app-header {
   display: flex;
@@ -139,16 +155,18 @@ select:focus {
   font-size: 14px;
   font-weight: 600;
 }
-.btn:hover {
-  background: var(--color-primary-hover);
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--color-primary-hover);
+  }
+  .btn.secondary:hover {
+    background: var(--color-surface);
+  }
 }
 .btn.secondary {
   background: var(--color-surface-2);
   border-color: var(--color-border);
   color: var(--color-text);
-}
-.btn.secondary:hover {
-  background: var(--color-surface);
 }
 .btn.danger {
   background: var(--color-danger);
@@ -219,7 +237,9 @@ select:focus {
 .planner-grid {
   overflow: auto;
   max-height: min(74vh, 900px);
+  max-height: min(74dvh, 900px);
   min-height: 360px;
+  overscroll-behavior: contain;
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-surface);
@@ -328,7 +348,6 @@ select:focus {
   background: transparent;
   color: var(--color-primary);
 }
-.hour-slot:hover,
 .hour-slot:focus-visible {
   background: #43b5d416;
 }
@@ -336,9 +355,23 @@ select:focus {
   opacity: 0;
   font-size: 24px;
 }
-.hour-slot:hover span,
 .hour-slot:focus-visible span {
   opacity: 1;
+}
+@media (hover: hover) {
+  .hour-slot:hover {
+    background: #43b5d416;
+  }
+  .hour-slot:hover span {
+    opacity: 1;
+  }
+  .event-block:hover {
+    filter: brightness(1.06);
+  }
+  .pill:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+  }
 }
 .event-layer {
   position: absolute;
@@ -371,9 +404,6 @@ select:focus {
   font-size: 11px;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
-}
-.event-block:hover {
-  filter: brightness(1.06);
 }
 .event-block.dragging {
   z-index: 3;
@@ -496,10 +526,6 @@ select:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pill:hover {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-}
 .pill[aria-current='true'] {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -546,9 +572,21 @@ select:focus {
   margin-left: 8px;
   font-size: 13px;
 }
+@media (pointer: coarse) {
+  .btn,
+  .pill,
+  input {
+    min-height: 44px;
+  }
+  .trip-actions .btn,
+  .error .btn {
+    padding-block: 10px;
+  }
+}
 @media (max-width: 640px) {
   .app {
-    padding: 20px 12px;
+    --pad-y: 20px;
+    --pad-x: 12px;
   }
   .app-header {
     align-items: flex-start;
@@ -577,6 +615,7 @@ select:focus {
   }
   .planner-grid {
     max-height: 68vh;
+    max-height: 68dvh;
   }
   .event-editor {
     padding: 20px;

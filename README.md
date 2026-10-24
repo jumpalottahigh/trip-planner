@@ -41,6 +41,16 @@ The first launch opens an empty seven-day trip beginning today. Event colors are
 - The URL fragment is never sent to a server, but anyone with the link can read the trip, and it appears in browser history and wherever you paste it.
 - If a link points to a trip that is already saved on this device with different contents, you choose to save the link as a copy, keep your version, or replace it. Nothing is overwritten silently.
 - Trips span at most 366 days. Very long links may be cut off by some apps; a notice appears when a link gets long.
+- **Open link** accepts a pasted link (or just the `#t=...` part), which is how you bring a trip into the home-screen app, where there is no address bar. **Share** appears where the device supports the system share sheet.
+
+## iPhone and iPad home screen
+
+Deploy over HTTPS, open the site in Safari, then choose Share > Add to Home Screen. The app then runs full screen with its own icon, respects the notch and home indicator, and opens offline after the first visit (a service worker caches the app in production builds only).
+
+- A home-screen app has its own storage, separate from Safari. Trips saved in Safari do not appear there; move them with **Copy link** and **Open link**.
+- Adding a page that has a trip link to the Home Screen seeds the new app with that trip. Later launches ignore that saved link and open your most recent trip, so edits are never overwritten by a stale link.
+- iOS keeps the storage of home-screen apps, unlike Safari tabs, which may be cleared after weeks without use. Copy links of important trips anyway.
+- Icons live in `public/` (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon.svg`).
 
 ## Saving
 

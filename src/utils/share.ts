@@ -14,6 +14,14 @@ export function hasShareParam(hash: string): boolean {
   return hash.startsWith(PREFIX)
 }
 
+// Accepts a full link, a bare "#t=..." fragment, or just "t=...".
+export function extractShareHash(text: string): string | null {
+  const trimmed = text.trim()
+  const at = trimmed.indexOf('#')
+  const hash = at === -1 ? `#${trimmed}` : trimmed.slice(at)
+  return hasShareParam(hash) ? hash : null
+}
+
 function compare(a: string | number, b: string | number): number {
   return a < b ? -1 : a > b ? 1 : 0
 }

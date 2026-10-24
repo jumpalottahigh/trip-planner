@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StoredState, Trip } from '../types'
-import { decodeTrip, encodeTrip, hasShareParam } from '../utils/share'
+import {
+  decodeTrip,
+  encodeTrip,
+  extractShareHash,
+  hasShareParam
+} from '../utils/share'
 import { resolveIncoming } from '../utils/trips'
 
 export const LONG_LINK_LENGTH = 2000
@@ -11,10 +16,18 @@ export type ConflictChoice = 'keep' | 'replace' | 'copy'
 type Api = {
   state: StoredState | null
   trip: Trip | null
+  pristine: boolean
   selectTrip: (id: string) => boolean
   importTrip: (trip: Trip) => boolean
   replaceTrip: (trip: Trip) => boolean
   importCopy: (trip: Trip) => boolean
+}
+
+function isStandalone(): boolean {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
 }
 
 function writeHash(hash: string): void {
@@ -28,35 +41,43 @@ function writeHash(hash: string): void {
 export function useShareLink(api: Api) {
   const latest = useRef(api)
   latest.current = api
-  const pendingHash = useRef<string | null>(
-    hasShareParam(location.hash) ? location.hash : null
-  )
-  const [resolving, setResolving] = useState(pendingHash.current !== null)
+  const [launchHash] = useState(() => {
+    if (!hasShareParam(location.hash)) return null
+    // A home-screen app relaunches with the link saved at install time, which
+    // goes stale after edits. Only use it to seed an empty app.
+    return isStandalone() && !api.pristine ? null : location.hash
+  })
+  const pendingHash = useRef<string | null>(launchHash)
+  const [resolving, setResolving] = useState(launchHash !== null)
   const [conflict, setConflict] = useState<Conflict | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkLength, setLinkLength] = useState(0)
   const [syncTick, setSyncTick] = useState(0)
   const { trip } = api
 
-  const handle = useCallback(async (hash: string) => {
-    const result = await decodeTrip(hash)
-    const { state, selectTrip, importTrip } = latest.current
-    if (!result.trip) {
+  const handle = useCallback(
+    async (hash: string, reportError = true): Promise<string | null> => {
+      const result = await decodeTrip(hash)
+      const { state, selectTrip, importTrip } = latest.current
+      if (!result.trip) {
+        setResolving(false)
+        if (reportError) setLinkError(result.error)
+        return result.error
+      }
+      if (!state) {
+        pendingHash.current = hash
+        return null
+      }
+      const resolution = resolveIncoming(state, result.trip)
+      if (resolution.kind === 'conflict')
+        setConflict({ incoming: result.trip, local: resolution.local })
+      else if (resolution.kind === 'select') selectTrip(resolution.id)
+      else importTrip(result.trip)
       setResolving(false)
-      setLinkError(result.error)
-      return
-    }
-    if (!state) {
-      pendingHash.current = hash
-      return
-    }
-    const resolution = resolveIncoming(state, result.trip)
-    if (resolution.kind === 'conflict')
-      setConflict({ incoming: result.trip, local: resolution.local })
-    else if (resolution.kind === 'select') selectTrip(resolution.id)
-    else importTrip(result.trip)
-    setResolving(false)
-  }, [])
+      return null
+    },
+    []
+  )
 
   useEffect(() => {
     if (!api.state || !pendingHash.current) return
@@ -123,13 +144,36 @@ export function useShareLink(api: Api) {
     }
   }, [])
 
+  const shareLink = useCallback(async (): Promise<void> => {
+    const current = latest.current.trip
+    if (!current) return
+    try {
+      writeHash(await encodeTrip(current))
+      await navigator.share({ title: current.name, url: location.href })
+    } catch {
+      // Cancelling the share sheet rejects; there is nothing to report.
+    }
+  }, [])
+
+  const openLink = useCallback(
+    async (text: string): Promise<string | null> => {
+      const hash = extractShareHash(text)
+      if (!hash) return 'Paste a trip link that contains #t=…'
+      return handle(hash, false)
+    },
+    [handle]
+  )
+
   return {
     resolving,
     conflict,
     linkError,
     linkTooLong: linkLength > LONG_LINK_LENGTH,
+    canShare: typeof navigator.share === 'function',
     dismissLinkError: () => setLinkError(null),
     resolveConflict,
-    copyLink
+    copyLink,
+    shareLink,
+    openLink
   }
 }
