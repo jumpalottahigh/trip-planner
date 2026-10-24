@@ -1,54 +1,190 @@
-import { useState } from 'react';
-import type { EventDraft } from './types';
-import { DayPlanner } from './components/DayPlanner';
-import { EventEditor } from './components/EventEditor';
-import { PlannerHeader } from './components/PlannerHeader';
-import { usePlanner } from './hooks/usePlanner';
+import { useState } from 'react'
+import type { EventDraft, Trip } from './types'
+import { DayPlanner } from './components/DayPlanner'
+import { EventEditor } from './components/EventEditor'
+import { PlannerHeader } from './components/PlannerHeader'
+import { TripTabs } from './components/TripTabs'
+import { useShareLink } from './hooks/useShareLink'
+import { usePlanner } from './hooks/usePlanner'
+
+const describeTrip = (trip: Trip) =>
+  `${trip.events.length} ${trip.events.length === 1 ? 'event' : 'events'}, ${trip.startDate} to ${trip.endDate}`
 
 export function App() {
-  const { planner, error, saveEvent, deleteEvent, updateRange, reset, retry } = usePlanner();
-  const [editor, setEditor] = useState<{ draft: EventDraft; id?: string } | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const hidden = planner?.events.filter((event) => event.date < planner.startDate || event.date > planner.endDate).length ?? 0;
+  const planner = usePlanner()
+  const { state, trip, error } = planner
+  const share = useShareLink({
+    state,
+    trip,
+    selectTrip: planner.selectTrip,
+    importTrip: planner.importTrip,
+    replaceTrip: planner.replaceTrip,
+    importCopy: planner.importCopy
+  })
+  const [editor, setEditor] = useState<{
+    draft: EventDraft
+    id?: string
+  } | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const hidden =
+    trip?.events.filter(
+      (event) => event.date < trip.startDate || event.date > trip.endDate
+    ).length ?? 0
 
   return (
-    <main className="app">
-      <header className="app-header">
-        <div><p className="eyebrow">Make room for the good things</p><h1>Vacation Planner</h1></div>
-        <span className="storage-note">{error ? 'Storage needs attention' : 'Stored only in this browser'}</span>
+    <main className='app'>
+      <header className='app-header'>
+        <div>
+          <p className='eyebrow'>Make room for the good things</p>
+          <h1>Trip Planner</h1>
+        </div>
+        <span className='storage-note'>
+          {error
+            ? 'Storage needs attention'
+            : 'Saved on this device · the link holds the whole trip'}
+        </span>
       </header>
-      {error && <div className="error" role="alert">{error}</div>}
-      {!planner ? (
-        <section className="recovery">
-          <h2>Your saved planner could not be opened</h2>
-          <p>Retry to keep your existing data. Starting fresh explicitly replaces the saved planner.</p>
-          <button className="btn secondary" onClick={retry}>Retry loading</button>
-          <button className="btn danger" onClick={() => {
-            if (!confirmReset) { setConfirmReset(true); return; }
-            reset();
-          }}>{confirmReset ? 'Confirm replace saved planner' : 'Start fresh'}</button>
+      {error && (
+        <div className='error' role='alert'>
+          {error}
+        </div>
+      )}
+      {share.linkError && (
+        <div className='error' role='alert'>
+          {share.linkError} Your saved trips are unchanged.{' '}
+          <button className='btn secondary' onClick={share.dismissLinkError}>
+            Dismiss
+          </button>
+        </div>
+      )}
+      {!state || !trip ? (
+        <section className='recovery'>
+          <h2>Your saved trips could not be opened</h2>
+          <p>
+            Retry to keep your existing data. Starting fresh explicitly replaces
+            all saved trips.
+          </p>
+          <button className='btn secondary' onClick={planner.retry}>
+            Retry loading
+          </button>
+          <button
+            className='btn danger'
+            onClick={() => {
+              if (!confirmReset) {
+                setConfirmReset(true)
+                return
+              }
+              planner.reset()
+            }}
+          >
+            {confirmReset ? 'Confirm replace saved trips' : 'Start fresh'}
+          </button>
+        </section>
+      ) : share.resolving ? (
+        <p className='notice' role='status'>
+          Opening shared trip…
+        </p>
+      ) : share.conflict ? (
+        <section
+          className='recovery'
+          role='alertdialog'
+          aria-labelledby='conflict-title'
+        >
+          <h2 id='conflict-title'>This link differs from your saved trip</h2>
+          <p>
+            “{share.conflict.incoming.name}” is already on this device with
+            different contents.
+          </p>
+          <p>On this device: {describeTrip(share.conflict.local)}.</p>
+          <p>In the link: {describeTrip(share.conflict.incoming)}.</p>
+          <button className='btn' onClick={() => share.resolveConflict('copy')}>
+            Save link as a copy
+          </button>
+          <button
+            className='btn secondary'
+            onClick={() => share.resolveConflict('keep')}
+          >
+            Keep my version
+          </button>
+          <button
+            className='btn danger'
+            onClick={() => share.resolveConflict('replace')}
+          >
+            Replace my version with the link
+          </button>
         </section>
       ) : (
         <>
-          <PlannerHeader startDate={planner.startDate} endDate={planner.endDate} onChange={updateRange}
-            onAdd={() => setEditor({ draft: { title: 'New event', date: planner.startDate, startMinute: 9 * 60, endMinute: 10 * 60 } })} />
-          <div className="planner-hints">
-            <p>Click an empty hour to add an event. Drag to move; pull the top or bottom edge to resize.</p>
-            {planner.events.length === 0 && <span>Your days, your pace. Start with one event.</span>}
+          <TripTabs
+            trips={state.trips}
+            activeId={trip.id}
+            onSelect={planner.selectTrip}
+            onCreate={planner.createTrip}
+            onRename={planner.renameTrip}
+            onDelete={planner.deleteTrip}
+            onCopyLink={share.copyLink}
+          />
+          {share.linkTooLong && (
+            <p className='notice' role='status'>
+              This trip’s link is long. Some apps may cut it off when you paste
+              or share it.
+            </p>
+          )}
+          <PlannerHeader
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+            onChange={planner.updateRange}
+            onAdd={() =>
+              setEditor({
+                draft: {
+                  title: 'New event',
+                  date: trip.startDate,
+                  startMinute: 9 * 60,
+                  endMinute: 10 * 60
+                }
+              })
+            }
+          />
+          <div className='planner-hints'>
+            <p>
+              Click an empty hour to add an event. Drag to move; pull the top or
+              bottom edge to resize.
+            </p>
+            {trip.events.length === 0 && (
+              <span>Your days, your pace. Start with one event.</span>
+            )}
           </div>
-          {hidden > 0 && <p className="notice" role="status">
-            {hidden} {hidden === 1 ? 'event is' : 'events are'} outside the displayed dates, still saved. Extend the trip dates to see {hidden === 1 ? 'it' : 'them'} again.
-          </p>}
-          <DayPlanner planner={planner}
+          {hidden > 0 && (
+            <p className='notice' role='status'>
+              {hidden} {hidden === 1 ? 'event is' : 'events are'} outside the
+              displayed dates, still saved. Extend the trip dates to see{' '}
+              {hidden === 1 ? 'it' : 'them'} again.
+            </p>
+          )}
+          <DayPlanner
+            planner={trip}
             onAdd={(draft) => setEditor({ draft })}
             onEdit={(event) => setEditor({ draft: event, id: event.id })}
-            onCommit={(event) => { saveEvent(event, event.id); }} />
-          <p className="footer-note">One trip · Local times · Overlaps welcome · Click an event to edit its details</p>
-          {editor && <EventEditor draft={editor.draft} id={editor.id}
-            startDate={planner.startDate} endDate={planner.endDate}
-            onSave={saveEvent} onDelete={deleteEvent} onClose={() => setEditor(null)} />}
+            onCommit={(event) => {
+              planner.saveEvent(event, event.id)
+            }}
+          />
+          <p className='footer-note'>
+            Local times · Overlaps welcome · Click an event to edit its details
+          </p>
+          {editor && (
+            <EventEditor
+              draft={editor.draft}
+              id={editor.id}
+              startDate={trip.startDate}
+              endDate={trip.endDate}
+              onSave={planner.saveEvent}
+              onDelete={planner.deleteEvent}
+              onClose={() => setEditor(null)}
+            />
+          )}
         </>
       )}
     </main>
-  );
+  )
 }

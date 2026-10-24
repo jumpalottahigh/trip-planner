@@ -1,4 +1,4 @@
-# Vacation Planner
+# Trip Planner
 
 A browser-only vacation itinerary planner with draggable events, hourly scheduling, and local saving.
 
@@ -34,16 +34,24 @@ The production static files are generated in `dist/`. Preview uses http://localh
 
 The first launch opens an empty seven-day trip beginning today. Event colors are automatic and stable.
 
+## Trips and sharing
+
+- Use the pills above the dates to switch trips, **+ New trip** to add one, and **Rename** / **Delete** for the selected trip.
+- The address bar always holds the complete selected trip (name, dates, and events), compressed into the `#t=...` part of the URL. **Copy link** copies it. Opening the link on any device recreates the trip there.
+- The URL fragment is never sent to a server, but anyone with the link can read the trip, and it appears in browser history and wherever you paste it.
+- If a link points to a trip that is already saved on this device with different contents, you choose to save the link as a copy, keep your version, or replace it. Nothing is overwritten silently.
+- Trips span at most 366 days. Very long links may be cut off by some apps; a notice appears when a link gets long.
+
 ## Saving
 
-One trip is stored in **localStorage**, under `vacation-day-planner:v1`. There is no backend, account, analytics, or external service.
+All trips are stored in **localStorage**, under `vacation-day-planner:v2`. Data saved by the earlier single-trip version (`vacation-day-planner:v1`) is copied into a trip named "My trip" on first load and the old entry is left in place. There is no backend, account, analytics, or external service.
 
-Data belongs to this browser profile and origin (scheme, hostname, and port). Switching browsers, changing `localhost` to another hostname, or using the preview port does not share data. Clearing site data removes the saved trip; private browsing may discard it. This is local convenience storage, not a backup or synchronization service.
+Data belongs to this browser profile and origin (scheme, hostname, and port). Switching browsers, changing `localhost` to another hostname, or using the preview port does not share data. Clearing site data removes the saved trips; private browsing may discard them. This is local convenience storage, not a backup or synchronization service. Copy a trip's link to keep it elsewhere.
 
 Failed writes show an error and do not apply the unsaved change. Invalid or unsupported stored data is not silently overwritten: retry loading or explicitly confirm **Start fresh** to replace it.
 
 ## Scope
 
-Version 1 supports a single trip, same-day events, hourly scheduling, and automatic colors. Color selection, notes/links, overnight events, and multiple-trip pills are intentionally deferred.
+Supports multiple trips, same-day events, hourly scheduling, and automatic colors. Color selection, notes/links, and overnight events are intentionally deferred. Any new trip or event field must also be added to the share link format.
 
 See [future features](./NEXT-FEATURES.md) for the additions discussed for later versions.

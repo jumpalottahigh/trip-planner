@@ -1,6 +1,6 @@
 # Future features
 
-Features discussed and deferred until after the first working version of the vacation planner. These are future steps, not implemented functionality.
+Features discussed and deferred until after the first working version of the trip planner. These are future steps, not implemented functionality.
 
 ## 1. Choose event colors
 
