@@ -23,9 +23,9 @@ The production static files are generated in `dist/`. Preview uses http://localh
 
 ## Plan your days
 
-- Set the trip dates and choose **Apply dates**.
+- Open the **⋯** menu next to the selected trip and choose **Adjust trip dates** to set the start and end.
 - Days run across the grid; hours run down from **07:00 to 23:00**.
-- Click an empty hour or **+ Add event** to enter a name and times.
+- Tap or click an empty hour to enter a name and times.
 - Drag an event vertically to change its time or horizontally to change its day. Duration stays the same. Near the grid edges, dragging scrolls the grid.
 - Pull the top or bottom edge to change the start or end. Events snap to whole hours, last at least one hour, and stay within the displayed day/time bounds.
 - Click an event (or focus it and press Enter/Space) to rename it, set exact dates/times without dragging, or delete it. Deletion requires confirmation.
@@ -36,7 +36,7 @@ The first launch opens an empty seven-day trip beginning today. Event colors are
 
 ## Trips and sharing
 
-- Use the pills above the dates to switch trips, **+ New trip** to add one, and **Rename** / **Delete** for the selected trip.
+- Use the pills above the grid to switch trips and **+ New trip** to add one. The **⋯** menu next to the selected trip holds **Adjust trip dates**, **Rename trip**, **Copy link**, **Share link**, **Open link…** and **Delete trip**.
 - The address bar always holds the complete selected trip (name, dates, and events), compressed into the `#t=...` part of the URL. **Copy link** copies it. Opening the link on any device recreates the trip there.
 - The URL fragment is never sent to a server, but anyone with the link can read the trip, and it appears in browser history and wherever you paste it.
 - If a link points to a trip that is already saved on this device with different contents, you choose to save the link as a copy, keep your version, or replace it. Nothing is overwritten silently.

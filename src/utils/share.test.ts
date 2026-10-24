@@ -68,7 +68,9 @@ async function deflate(bytes: Uint8Array): Promise<Uint8Array> {
 
 describe('share links', () => {
   it('extracts the share fragment from pasted text', () => {
-    expect(extractShareHash('https://example.com/app/#t=1.abc')).toBe('#t=1.abc')
+    expect(extractShareHash('https://example.com/app/#t=1.abc')).toBe(
+      '#t=1.abc'
+    )
     expect(extractShareHash('  #t=1.abc\n')).toBe('#t=1.abc')
     expect(extractShareHash('t=1.abc')).toBe('#t=1.abc')
     expect(extractShareHash('https://example.com/')).toBeNull()

@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { Trip } from '../types'
-import { MAX_NAME_LENGTH } from '../utils/storage'
+import {
+  DatesDialog,
+  DeleteDialog,
+  OpenLinkDialog,
+  RenameDialog
+} from './TripDialogs'
+import { TripMenu } from './TripMenu'
+import type { MenuItem } from './TripMenu'
 
 type Props = {
   trips: Trip[]
@@ -9,14 +16,14 @@ type Props = {
   onCreate: () => void
   onRename: (id: string, name: string) => boolean
   onDelete: (id: string) => void
+  onChangeDates: (start: string, end: string) => boolean
   onCopyLink: () => Promise<boolean>
   canShare: boolean
   onShare: () => Promise<void>
   onOpenLink: (text: string) => Promise<string | null>
 }
 
-type Mode = 'idle' | 'rename' | 'delete' | 'open'
-type CopyStatus = 'idle' | 'copied' | 'failed'
+type Dialog = 'dates' | 'rename' | 'open' | 'delete' | null
 
 export function TripTabs({
   trips,
@@ -25,36 +32,49 @@ export function TripTabs({
   onCreate,
   onRename,
   onDelete,
+  onChangeDates,
   onCopyLink,
   canShare,
   onShare,
   onOpenLink
 }: Props) {
   const active = trips.find((trip) => trip.id === activeId)
-  const [mode, setMode] = useState<Mode>('idle')
-  const [name, setName] = useState('')
-  const [link, setLink] = useState('')
-  const [nameError, setNameError] = useState<string | null>(null)
-  const [copy, setCopy] = useState<CopyStatus>('idle')
+  const [dialog, setDialog] = useState<Dialog>(null)
+  const [status, setStatus] = useState('')
 
   useEffect(() => {
-    setMode('idle')
-    setNameError(null)
-    setCopy('idle')
+    setDialog(null)
+    setStatus('')
   }, [activeId])
   useEffect(() => {
-    if (copy === 'idle') return
-    const timer = setTimeout(() => setCopy('idle'), 3000)
+    if (!status) return
+    const timer = setTimeout(() => setStatus(''), 3000)
     return () => clearTimeout(timer)
-  }, [copy])
+  }, [status])
 
   if (!active) return null
+
+  const items: MenuItem[] = [
+    { label: 'Adjust trip dates', onSelect: () => setDialog('dates') },
+    { label: 'Rename trip', onSelect: () => setDialog('rename') },
+    {
+      label: 'Copy link',
+      onSelect: async () =>
+        setStatus((await onCopyLink()) ? 'Link copied' : 'Could not copy the link')
+    },
+    ...(canShare
+      ? [{ label: 'Share link', onSelect: () => void onShare() }]
+      : []),
+    { label: 'Open link…', onSelect: () => setDialog('open') },
+    { label: 'Delete trip', onSelect: () => setDialog('delete'), danger: true }
+  ]
+  const close = () => setDialog(null)
 
   return (
     <section className='trip-bar' aria-label='Trips'>
       <ul className='trip-pills'>
-        {trips.map((trip) => (
-          <li key={trip.id}>
+        {trips.map((trip) => {
+          const pill = (
             <button
               type='button'
               className='pill'
@@ -63,173 +83,46 @@ export function TripTabs({
             >
               {trip.name}
             </button>
-          </li>
-        ))}
+          )
+          return (
+            <li key={trip.id}>
+              {trip.id === activeId ? (
+                <div className='pill-group'>
+                  {pill}
+                  <TripMenu label={`Options for ${trip.name}`} items={items} />
+                </div>
+              ) : (
+                pill
+              )}
+            </li>
+          )
+        })}
         <li>
           <button type='button' className='pill pill-add' onClick={onCreate}>
             + New trip
           </button>
         </li>
       </ul>
-      {mode === 'open' ? (
-        <form
-          className='trip-actions'
-          noValidate
-          onSubmit={async (event) => {
-            event.preventDefault()
-            const failure = await onOpenLink(link)
-            if (failure) setNameError(failure)
-            else {
-              setLink('')
-              setNameError(null)
-              setMode('idle')
-            }
-          }}
-        >
-          <label className='visually-hidden' htmlFor='trip-link'>
-            Trip link
-          </label>
-          <input
-            id='trip-link'
-            autoFocus
-            value={link}
-            inputMode='url'
-            autoCapitalize='off'
-            autoCorrect='off'
-            spellCheck={false}
-            placeholder='Paste a trip link'
-            onChange={(event) => setLink(event.target.value)}
-          />
-          <button type='submit' className='btn'>
-            Open
-          </button>
-          <button
-            type='button'
-            className='btn secondary'
-            onClick={() => {
-              setMode('idle')
-              setNameError(null)
-            }}
-          >
-            Cancel
-          </button>
-          {nameError && (
-            <p className='field-error' role='alert'>
-              {nameError}
-            </p>
-          )}
-        </form>
-      ) : mode === 'rename' ? (
-        <form
-          className='trip-actions'
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (onRename(active.id, name)) setMode('idle')
-            else
-              setNameError(
-                `Enter a name between 1 and ${MAX_NAME_LENGTH} characters.`
-              )
-          }}
-        >
-          <label className='visually-hidden' htmlFor='trip-name'>
-            Trip name
-          </label>
-          <input
-            id='trip-name'
-            autoFocus
-            value={name}
-            maxLength={MAX_NAME_LENGTH}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <button type='submit' className='btn'>
-            Save name
-          </button>
-          <button
-            type='button'
-            className='btn secondary'
-            onClick={() => {
-              setMode('idle')
-              setNameError(null)
-            }}
-          >
-            Cancel
-          </button>
-          {nameError && (
-            <p className='field-error' role='alert'>
-              {nameError}
-            </p>
-          )}
-        </form>
-      ) : (
-        <div className='trip-actions'>
-          <button
-            type='button'
-            className='btn secondary'
-            onClick={async () =>
-              setCopy((await onCopyLink()) ? 'copied' : 'failed')
-            }
-          >
-            Copy link
-          </button>
-          {canShare && (
-            <button type='button' className='btn secondary' onClick={onShare}>
-              Share
-            </button>
-          )}
-          <button
-            type='button'
-            className='btn secondary'
-            onClick={() => {
-              setLink('')
-              setNameError(null)
-              setMode('open')
-            }}
-          >
-            Open link
-          </button>
-          <button
-            type='button'
-            className='btn secondary'
-            onClick={() => {
-              setName(active.name)
-              setNameError(null)
-              setMode('rename')
-            }}
-          >
-            Rename
-          </button>
-          {mode === 'delete' ? (
-            <>
-              <button
-                type='button'
-                className='btn danger'
-                onClick={() => onDelete(active.id)}
-              >
-                Confirm delete
-              </button>
-              <button
-                type='button'
-                className='btn secondary'
-                onClick={() => setMode('idle')}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              type='button'
-              className='btn secondary'
-              onClick={() => setMode('delete')}
-            >
-              Delete
-            </button>
-          )}
-          <span className='copy-status' role='status'>
-            {copy === 'copied' && 'Link copied'}
-            {copy === 'failed' && 'Could not copy the link.'}
-          </span>
-        </div>
+      <p className='toast' role='status'>
+        {status}
+      </p>
+      {dialog === 'dates' && (
+        <DatesDialog trip={active} onSave={onChangeDates} onClose={close} />
+      )}
+      {dialog === 'rename' && (
+        <RenameDialog
+          trip={active}
+          onSave={(name) => onRename(active.id, name)}
+          onClose={close}
+        />
+      )}
+      {dialog === 'open' && <OpenLinkDialog onOpen={onOpenLink} onClose={close} />}
+      {dialog === 'delete' && (
+        <DeleteDialog
+          trip={active}
+          onConfirm={() => onDelete(active.id)}
+          onClose={close}
+        />
       )}
     </section>
   )

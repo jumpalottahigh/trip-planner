@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { EventDraft, Trip } from './types'
 import { DayPlanner } from './components/DayPlanner'
 import { EventEditor } from './components/EventEditor'
-import { PlannerHeader } from './components/PlannerHeader'
 import { TripTabs } from './components/TripTabs'
 import { useShareLink } from './hooks/useShareLink'
 import { usePlanner } from './hooks/usePlanner'
@@ -123,6 +122,7 @@ export function App() {
             onCreate={planner.createTrip}
             onRename={planner.renameTrip}
             onDelete={planner.deleteTrip}
+            onChangeDates={planner.updateRange}
             onCopyLink={share.copyLink}
             canShare={share.canShare}
             onShare={share.shareLink}
@@ -134,25 +134,10 @@ export function App() {
               or share it.
             </p>
           )}
-          <PlannerHeader
-            startDate={trip.startDate}
-            endDate={trip.endDate}
-            onChange={planner.updateRange}
-            onAdd={() =>
-              setEditor({
-                draft: {
-                  title: 'New event',
-                  date: trip.startDate,
-                  startMinute: 9 * 60,
-                  endMinute: 10 * 60
-                }
-              })
-            }
-          />
           <div className='planner-hints'>
             <p>
-              Click an empty hour to add an event. Drag to move; pull the top or
-              bottom edge to resize.
+              Tap or click an empty hour to add an event. Drag to move; pull the
+              top or bottom edge to resize.
             </p>
             {trip.events.length === 0 && (
               <span>Your days, your pace. Start with one event.</span>
