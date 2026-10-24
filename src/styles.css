@@ -632,6 +632,13 @@ input[type='date']::-webkit-date-and-time-value {
     padding-block: 10px;
   }
 }
+@media (max-width: 640px), (pointer: coarse) {
+  /* Sit near the top so the on-screen keyboard never covers the form. */
+  .event-editor {
+    margin: calc(env(safe-area-inset-top, 0px) + 12px) auto auto;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px));
+  }
+}
 @media (max-width: 640px) {
   .app {
     --pad-y: 20px;

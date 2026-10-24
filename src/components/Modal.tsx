@@ -14,6 +14,12 @@ export function Modal({ title, onClose, children }: Props) {
   useEffect(() => {
     const dialog = ref.current
     dialog?.showModal()
+    // React's autoFocus runs before the dialog is open, so focus the first text field here.
+    const field = dialog?.querySelector<HTMLInputElement>(
+      "input:not([type]), input[type='text']"
+    )
+    field?.focus()
+    field?.select()
     return () => dialog?.close()
   }, [])
 

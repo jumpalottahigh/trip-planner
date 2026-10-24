@@ -93,10 +93,8 @@ export function RenameDialog({
         <label>
           Trip name
           <input
-            autoFocus
             value={name}
             maxLength={MAX_NAME_LENGTH}
-            onFocus={(event) => event.target.select()}
             onChange={(event) => setName(event.target.value)}
           />
         </label>
@@ -139,7 +137,6 @@ export function OpenLinkDialog({
         <label>
           Trip link
           <input
-            autoFocus
             value={link}
             inputMode='url'
             autoCapitalize='off'
